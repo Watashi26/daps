@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sys
 
@@ -60,7 +61,9 @@ def test_assets(tmp_path):
     # ── Run the asset scanner & merger ──────────────────── 
     # Note: dirB is higher priority than dirA
     # because it is the last one in the list.
-    assets_dict, prefix_index = get_assets_files([str(dir_a), str(dir_b), str(dir_c)], logger=None)
+    assets_dict, prefix_index = get_assets_files(
+        [str(dir_a), str(dir_b), str(dir_c)], logger=logging.getLogger("test_assets")
+    )
     # ── Check the results of Prefix Index ─────────────────────
     print(f"Prefix index:")
     for key, value in prefix_index.items():
@@ -70,12 +73,13 @@ def test_assets(tmp_path):
     print(f"DirA contents: {os.listdir(dir_a)}")
     print(f"DirB contents: {os.listdir(dir_b)}")
     print(f"DirC contents: {os.listdir(dir_c)}")
-    for asset_type, assets in assets_dict.items():
-        if assets:
-            print(f"\nAsset Type: {asset_type}")
-        for asset in assets:
-            print(json.dumps(asset, indent=2))
+    for asset in assets_dict:
+        print(json.dumps(asset, indent=2))
 
     # ── Check the results of the merger ─────────────────────
     assert assets_dict is not None
     assert prefix_index is not None
+    by_type = {asset["type"]: asset for asset in assets_dict}
+    assert by_type["movies"]["tmdb_id"] == 847
+    assert by_type["series"]["tvdb_id"] == 393192
+    assert by_type["series"]["season_numbers"] == [0, 1]

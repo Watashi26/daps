@@ -14,11 +14,14 @@ from util.construct import (
 
 
 def test_create_collection():
-    result = create_collection("Hulu (US) Shows", "hulushows", ["poster.jpg"])
+    result = create_collection("Hulu (US) Shows", None, "hulushows", ["poster.jpg"])
     assert result["type"] == "collections"
     assert result["normalized_title"] == "hulushows"
+    assert result["files"] == ["poster.jpg"]
 
 def test_generate_title_variants_logic():
     v = generate_title_variants("The Matrix Collection")
-    assert v["no_prefix"] == "Matrix Collection"
-    assert v["no_suffix"] == "The Matrix"
+    assert "Matrix Collection" in v["alternate_titles"]  # prefix stripped
+    assert "The Matrix" in v["alternate_titles"]  # suffix stripped
+    assert "Matrix" in v["alternate_titles"]  # both stripped
+    assert len(v["normalized_alternate_titles"]) == len(set(v["normalized_alternate_titles"]))

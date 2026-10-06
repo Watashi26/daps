@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from util.construct import generate_title_variants
 from util.index import build_search_index, create_new_empty_index, search_matches
 from util.normalization import normalize_titles
 
@@ -29,9 +30,11 @@ def create_mock_asset(title, asset_type="collections"):
 def test_prefix_index_lookup(asset_title, media_title, should_match):
     index = create_new_empty_index()
     asset = create_mock_asset(asset_title)
-    build_search_index(index, asset["title"], asset, asset["type"], logger=None)
+    build_search_index(index, asset["title"], asset, logger=None)
 
-    results = search_matches(index, media_title, asset["type"], logger=None)
+    # Like util.match: search the media title plus its generated alternate titles
+    titles_to_try = [media_title] + generate_title_variants(media_title)["alternate_titles"]
+    results = [r for title in titles_to_try for r in search_matches(index, title, logger=None)]
     match_titles = [r["title"] for r in results]
     print(f"Prefix_index: {json.dumps(index, indent=2)}")
     print(f"Results: {json.dumps(results, indent=2)}")

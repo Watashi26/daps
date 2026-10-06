@@ -54,7 +54,6 @@ ENV/
 .extra_scripts/
 screenshots/
 logs/
-tests/
 
 
 # Ignore Files
@@ -65,7 +64,6 @@ tests/
 **side-projects**
 test2.py
 .env
-/tests
 pyproject.toml
 pyproject.toml
 /config

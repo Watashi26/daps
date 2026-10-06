@@ -26,4 +26,6 @@ def test_matching():
         "year": None
     }
     
-    assert is_match(asset, media, logger=None, log=None)
+    # is_match returns (matched, reason); a bare tuple would always be truthy
+    matched, reason = is_match(asset, media)
+    assert matched, reason
