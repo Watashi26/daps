@@ -222,17 +222,25 @@ def process_instance(
         logger,
     )
     if not filtered_media_dict and unattended:
-        logger.info(
-            f"All media for {app.instance_name} is already tagged—removing tags for unattended operation."
-        )
-        media_ids = [item["media_id"] for item in media_dict]
-        logger.info("All media is tagged. Removing tags...")
-        app.remove_tags(media_ids, checked_tag_id)
-        media_dict = (
-            app.get_parsed_media(include_episode=True)
-            if app.instance_type.lower() == "sonarr"
-            else app.get_parsed_media()
-        )
+        if config.dry_run:
+            logger.info(
+                f"[DRY RUN] All media for {app.instance_name} is already tagged—would remove tags for unattended operation."
+            )
+            # Simulate the tag reset locally so the dry run shows the next cycle's picks
+            for item in media_dict:
+                item["tags"] = [tag for tag in item["tags"] if tag != checked_tag_id]
+        else:
+            logger.info(
+                f"All media for {app.instance_name} is already tagged—removing tags for unattended operation."
+            )
+            media_ids = [item["media_id"] for item in media_dict]
+            logger.info("All media is tagged. Removing tags...")
+            app.remove_tags(media_ids, checked_tag_id)
+            media_dict = (
+                app.get_parsed_media(include_episode=True)
+                if app.instance_type.lower() == "sonarr"
+                else app.get_parsed_media()
+            )
         filtered_media_dict = filter_media(
             media_dict,
             checked_tag_id,

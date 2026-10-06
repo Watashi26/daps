@@ -129,9 +129,14 @@ def process_instance(
             ]
         if not all_items_without_tags:
             media_ids = [item["media_id"] for item in media_dict]
-            logger.info("All media is tagged. Removing tags...")
-            app.remove_tags(media_ids, tag_id)
-            all_items_without_tags = app.get_parsed_media()
+            if getattr(config, "dry_run", False):
+                # Simulate the tag reset: treat all media as untagged without touching the ARR
+                logger.info("[DRY RUN] All media is tagged. Would remove tags...")
+                all_items_without_tags = media_dict
+            else:
+                logger.info("All media is tagged. Removing tags...")
+                app.remove_tags(media_ids, tag_id)
+                all_items_without_tags = app.get_parsed_media()
         media_dict = all_items_without_tags
     # Chunking behavior: single or batched
     if not getattr(config, "enable_batching", False):
