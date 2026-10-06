@@ -1,6 +1,10 @@
 # Single-stage build for installing Python dependencies and required packages
 FROM python:3.11-slim 
 
+# Pinned jdupes/libjodycode releases (building their default branch can break at any time)
+ARG LIBJODYCODE_VERSION=v4.1.2
+ARG JDUPES_VERSION=v1.31.2
+
 # Copy requirements.txt and install Python dependencies
 COPY requirements.txt .
 
@@ -11,10 +15,10 @@ RUN set -eux; \
         gcc wget curl unzip p7zip-full tzdata jq git build-essential && \
     pip3 install --no-cache-dir -r requirements.txt && \
     curl https://rclone.org/install.sh | bash && \
-    git clone https://codeberg.org/jbruchon/libjodycode.git /tmp/libjodycode && \
+    git clone --depth 1 --branch "${LIBJODYCODE_VERSION}" https://codeberg.org/jbruchon/libjodycode.git /tmp/libjodycode && \
     make -C /tmp/libjodycode && make -C /tmp/libjodycode install && \
     ldconfig && \
-    git clone https://codeberg.org/jbruchon/jdupes.git /tmp/jdupes && \
+    git clone --depth 1 --branch "${JDUPES_VERSION}" https://codeberg.org/jbruchon/jdupes.git /tmp/jdupes && \
     make -C /tmp/jdupes && make -C /tmp/jdupes install && \
     ln -s /usr/local/bin/jdupes /usr/bin/jdupes && \
     rm -rf /tmp/libjodycode /tmp/jdupes
