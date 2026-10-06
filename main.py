@@ -115,8 +115,16 @@ def load_schedule():
     return schedule
 
 
-def run_module(module_to_run, output=False, logger=None):
+def run_module(module_to_run, output=False, logger=None, instance=None):
     config = Config(module_to_run).module_config
+    if instance:
+        # Single-instance run (web UI): only process the selected instance
+        config.instances_list = [
+            entry
+            for entry in getattr(config, "instances_list", None) or []
+            if entry.get("instance") == instance
+        ]
+        config.run_instance = instance
 
     def run_python_module(module_to_run):
         config.instances_config = Config(module_to_run).instances_config

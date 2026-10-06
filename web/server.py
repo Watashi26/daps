@@ -55,9 +55,10 @@ def save_config_dict(cfg: Dict[str, Any]) -> None:
 
 
 class RunRequest(BaseModel):
-    """Request schema for running a module."""
+    """Request schema for running a module, optionally limited to one instance."""
 
     module: str
+    instance: Optional[str] = None
 
 
 class CancelRequest(BaseModel):
@@ -95,6 +96,11 @@ def get_logger(request: Request) -> Any:
 # ==== App and State ====
 run_processes: Dict[str, multiprocessing.Process] = {}
 run_time: Dict[str, float] = {}
+# Instance a web-started run is limited to (absent/None = all instances)
+run_instances: Dict[str, Optional[str]] = {}
+
+# Modules whose instances_list entries can be run individually
+INSTANCE_RUN_MODULES = {"upgradinatorr"}
 
 app = FastAPI()
 router = APIRouter()
@@ -298,30 +304,54 @@ async def run_module(
     from main import list_of_python_modules, run_module
 
     module = data.module
-    logger.debug("[WEB] Serving POST /api/run for module: %s", module)
+    instance = data.instance
+    logger.debug(
+        "[WEB] Serving POST /api/run for module: %s, instance: %s", module, instance
+    )
     if module not in list_of_python_modules:
         logger.error(f"[WEB] Unknown module: {module}")
         return JSONResponse(
             status_code=400, content={"error": f"Unknown module: {module}"}
         )
-    if module in run_processes and run_processes[module].is_alive():
+    manager = getattr(app.state, "manager", None)
+    scheduled_proc = manager.running_modules.get(module) if manager else None
+    if (module in run_processes and run_processes[module].is_alive()) or (
+        scheduled_proc and scheduled_proc.is_alive()
+    ):
         logger.error(f"[WEB] Module {module} is already running")
         return JSONResponse(
             status_code=400, content={"error": f"Module {module} is already running"}
         )
+    if instance:
+        if module not in INSTANCE_RUN_MODULES:
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Module {module} does not support instance runs"},
+            )
+        instances_list = (load_config_dict().get(module) or {}).get(
+            "instances_list"
+        ) or []
+        if instance not in [entry.get("instance") for entry in instances_list]:
+            logger.error(f"[WEB] Instance {instance} is not configured for {module}")
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"Instance {instance} is not configured for {module}"},
+            )
 
     def background_run():
         start = time.time()
-        logger.info(f"[WEB] Background starting module: {module}")
+        target = f"{module} (instance: {instance})" if instance else module
+        logger.info(f"[WEB] Background starting module: {target}")
         run_time[module] = start
-        proc = run_module(module)
+        proc = run_module(module, instance=instance)
         if proc:
             run_processes[module] = proc
+            run_instances[module] = instance
         else:
-            logger.error(f"[WEB] Failed to start module: {module}")
+            logger.error(f"[WEB] Failed to start module: {target}")
 
     background.add_task(background_run)
-    return {"status": "starting", "module": module}
+    return {"status": "starting", "module": module, "instance": instance}
 
 
 @app.get("/api/status", response_model=None)
@@ -343,6 +373,7 @@ async def module_status(module: str, logger: Any = Depends(get_logger)) -> Any:
                 logger.info(
                     f"[WEB] Module: {module} finished in {human_duration} (raw: {duration:.2f} seconds)"
                 )
+            run_instances.pop(module, None)
             if proc in run_processes.values():
                 del run_processes[module]
             elif (
@@ -351,7 +382,11 @@ async def module_status(module: str, logger: Any = Depends(get_logger)) -> Any:
             ):
                 del app.state.manager.running_modules[module]
     try:
-        return {"module": module, "running": alive}
+        return {
+            "module": module,
+            "running": alive,
+            "instance": run_instances.get(module) if alive else None,
+        }
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
@@ -378,6 +413,7 @@ async def cancel_module(data: CancelRequest, logger: Any = Depends(get_logger)) 
         del app.state.manager.running_modules[module]
     else:
         del run_processes[module]
+        run_instances.pop(module, None)
     return {"status": "cancelled", "module": module}
 
 

@@ -424,6 +424,8 @@ def main(config: SimpleNamespace) -> None:
         if config.dry_run:
             table = [["Dry Run"], ["NO CHANGES WILL BE MADE"]]
             logger.info(create_table(table))
+        if getattr(config, "run_instance", None):
+            logger.info(f"Single-instance run: {config.run_instance}")
         if not getattr(config, "instances_list", None):
             logger.error("No instances found in config file.")
             sys.exit()
@@ -443,6 +445,10 @@ def main(config: SimpleNamespace) -> None:
                         )
                         final_output_dict.setdefault(instance_name, {}).update(
                             output or {}
+                        )
+                    else:
+                        logger.error(
+                            f"Unable to connect to {instance_name} ({url}), skipping."
                         )
         logger.debug(f"Processed instances: {list(final_output_dict.keys())}")
         if final_output_dict:

@@ -6,6 +6,7 @@ let fitAddon = null; // xterm-addon-fit instance
 let currentFullLogText = '';
 let lastWrittenLineCount = 0;
 let lastRenderedFileKey = null;
+let lastFirstLine = null;
 
 export function buildLogControls() {
     const controlsDiv = document.createElement('div');
@@ -110,7 +111,11 @@ function renderToXTerm(text, options = {}) {
     }
     const { isFiltered = false, forceClear = false, fileKey = null } = options;
     const lines = text.split('\n');
-    if (isFiltered || forceClear || fileKey !== lastRenderedFileKey) {
+    // A new module run rotates the log file: it shrinks and starts with a new header line
+    const rotated =
+        !isFiltered && (lines.length < lastWrittenLineCount || lines[0] !== lastFirstLine);
+    if (!isFiltered) lastFirstLine = lines[0];
+    if (isFiltered || forceClear || rotated || fileKey !== lastRenderedFileKey) {
         term.clear();
         lines.forEach((line) => {
             let processedLine = line;

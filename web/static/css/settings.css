@@ -101,7 +101,7 @@
 
 .upgradinatorr-table th,
 .upgradinatorr-table td {
-    padding: 0.5rem 1.2rem;
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--shadow);
     vertical-align: middle;
 }
@@ -154,6 +154,40 @@
 
 .upgradinatorr-table tr:last-child td:last-child {
     border-bottom-right-radius: 12px;
+}
+
+/* Full field width below the label; scroll instead of clipping when still too wide */
+.upgradinatorr-table-wrap {
+    grid-column: 1 / -1;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.upgradinatorr-table .table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.upgradinatorr-table td:last-child .btn {
+    min-width: 0;
+}
+
+.upgradinatorr-table .instance-run-btn {
+    min-width: 7.5rem;
+}
+
+.upgradinatorr-table .instance-logs-btn {
+    text-decoration: none;
+}
+
+.upgradinatorr-table .instance-run-btn:disabled {
+    background: var(--btn-bg);
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* ======================================================
