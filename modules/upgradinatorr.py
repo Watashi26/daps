@@ -166,6 +166,22 @@ def process_queue(
     return queue_dict
 
 
+def find_tag_id(app: BaseARRClient, tag_name: str) -> Optional[int]:
+    """
+    Look up a tag ID by name without creating the tag.
+
+    Args:
+        app: ARR client instance.
+        tag_name: Tag label (case-insensitive).
+    Returns:
+        Tag ID, or None if the tag doesn't exist.
+    """
+    for tag in app.get_all_tags() or []:
+        if tag["label"].lower() == tag_name.lower():
+            return tag["id"]
+    return None
+
+
 def process_instance(
     instance_type: str,
     instance_settings: Dict[str, Any],
@@ -191,6 +207,7 @@ def process_instance(
     count: int = instance_settings.get("count", 2)
     checked_tag_name: str = instance_settings.get("tag_name", "checked")
     ignore_tag_name: str = instance_settings.get("ignore_tag", "ignore")
+    use_tag_name: str = instance_settings.get("use_tag", "")
     unattended: bool = instance_settings.get("unattended", False)
     season_monitored_threshold: int = instance_settings.get(
         "season_monitored_threshold", 0
@@ -203,11 +220,41 @@ def process_instance(
             f"No 'season_monitored_threshold' provided for {app.instance_name}. Defaulting to 1."
         )
         season_monitored_threshold = 1
-    media_dict: List[Dict[str, Any]] = (
-        app.get_parsed_media(include_episode=True)
-        if app.instance_type.lower() == "sonarr"
-        else app.get_parsed_media()
-    )
+
+    # Optional use tag: only media carrying it is processed
+    use_tag_id: Optional[int] = None
+    if use_tag_name:
+        if use_tag_name.lower() == checked_tag_name.lower():
+            # The unattended reset would strip the use tag itself
+            logger.error(
+                f"Use tag '{use_tag_name}' for {app.instance_name} must differ from the tag name. Skipping."
+            )
+            return None
+        use_tag_id = find_tag_id(app, use_tag_name)
+        if use_tag_id is None:
+            logger.warning(
+                f"Use tag '{use_tag_name}' not found in {app.instance_name}. Skipping."
+            )
+            return None
+
+    def get_media() -> List[Dict[str, Any]]:
+        """Fetch media, limited to items carrying the use tag when one is set."""
+        media = (
+            app.get_parsed_media(include_episode=True)
+            if app.instance_type.lower() == "sonarr"
+            else app.get_parsed_media()
+        )
+        if use_tag_id is not None:
+            media = [item for item in media if use_tag_id in item["tags"]]
+        return media
+
+    media_dict: List[Dict[str, Any]] = get_media()
+    if use_tag_id is not None:
+        logger.info(
+            f"Limited to {len(media_dict)} items tagged '{use_tag_name}' in {app.instance_name}."
+        )
+        if not media_dict:
+            return None
     ignore_tag_id = None
     checked_tag_id: int = app.get_tag_id_from_name(checked_tag_name)
     if ignore_tag_name:
@@ -236,11 +283,7 @@ def process_instance(
             media_ids = [item["media_id"] for item in media_dict]
             logger.info("All media is tagged. Removing tags...")
             app.remove_tags(media_ids, checked_tag_id)
-            media_dict = (
-                app.get_parsed_media(include_episode=True)
-                if app.instance_type.lower() == "sonarr"
-                else app.get_parsed_media()
-            )
+            media_dict = get_media()
         filtered_media_dict = filter_media(
             media_dict,
             checked_tag_id,

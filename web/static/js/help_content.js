@@ -92,7 +92,8 @@ export const HELP_CONTENT = {
                 'count: Max number of searches per run.',
                 'tag_name: The tag used to mark an item as having been searched for upgrades.',
                 'ignore_tag: Do not upgrade media with this tag.',
-                'unattended: If true, skip confirmation.',
+                'use_tag: Only upgrade media with this tag; leave empty for all media. The ignore tag still wins.',
+                'unattended: When all media is tagged, remove the tags and start a new cycle automatically.',
                 'season_monitored_threshold: Minimum monitored percentage per season (Sonarr only).',
             ],
             renameinatorr: [

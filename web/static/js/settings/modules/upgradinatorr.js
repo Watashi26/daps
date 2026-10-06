@@ -37,6 +37,7 @@ export function renderUpgradinatorrSettings(formFields, config, rootConfig) {
                         <th>Count</th>
                         <th>Tag Name</th>
                         <th>Ignore Tag</th>
+                        <th>Use Tag</th>
                         <th>Unattended</th>
                         <th>Threshold</th>
                         <th>Actions</th>
@@ -55,6 +56,7 @@ export function renderUpgradinatorrSettings(formFields, config, rootConfig) {
             count: opts.count,
             tag_name: opts.tag_name,
             ignore_tag: opts.ignore_tag,
+            use_tag: opts.use_tag ?? '',
             unattended: opts.unattended,
         };
         if (typeof opts.season_monitored_threshold !== 'undefined') {
@@ -165,6 +167,7 @@ export function renderUpgradinatorrSettings(formFields, config, rootConfig) {
                 <td>${entry.count}</td>
                 <td>${entry.tag_name}</td>
                 <td>${entry.ignore_tag}</td>
+                <td>${entry.use_tag ?? ''}</td>
                 <td>${entry.unattended}</td>
                 <td>${entry.season_monitored_threshold ?? ''}</td>
                 <td>

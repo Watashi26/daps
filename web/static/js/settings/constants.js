@@ -122,6 +122,7 @@ export const PLACEHOLDER_TEXT = {
         count: '0',
         tag_name: 'Enter the tag you wish to use',
         ignore_tag: 'The tag you wish to use to ignore an entry',
+        use_tag: 'Only upgrade media with this tag (empty = all)',
     },
     renameinatorr: {
         tag_name: 'Enter the tag you wish to use',

@@ -527,6 +527,10 @@ export function upgradinatorrModal(editIdx, upgradinatorrData, rootConfig, updat
                     <input type="text" id="upgradinatorr-ignore-tag" class="input" placeholder="${
                         PLACEHOLDER_TEXT[moduleName]?.ignore_tag ?? ''
                     }" />
+                    <label>Use Tag</label>
+                    <input type="text" id="upgradinatorr-use-tag" class="input" placeholder="${
+                        PLACEHOLDER_TEXT[moduleName]?.use_tag ?? ''
+                    }" />
                     <label>Unattended</label>
                     <select id="upgradinatorr-unattended" class="select">
                       <option value="true">True</option>
@@ -573,6 +577,11 @@ export function upgradinatorrModal(editIdx, upgradinatorrData, rootConfig, updat
             const count = parseInt(modal.querySelector('#upgradinatorr-count').value, 10) || 0;
             const tag_name = modal.querySelector('#upgradinatorr-tag-name').value.trim();
             const ignore_tag = modal.querySelector('#upgradinatorr-ignore-tag').value.trim();
+            const use_tag = modal.querySelector('#upgradinatorr-use-tag').value.trim();
+            if (use_tag && use_tag.toLowerCase() === tag_name.toLowerCase()) {
+                // The unattended reset removes the tag name, which would strip the use tag
+                return alert('Use Tag must differ from Tag Name.');
+            }
             const unattended = modal.querySelector('#upgradinatorr-unattended').value === 'true';
             const isSonarr = Object.keys(rootConfig.instances.sonarr || {}).includes(inst);
             const season_threshold = isSonarr
@@ -583,6 +592,7 @@ export function upgradinatorrModal(editIdx, upgradinatorrData, rootConfig, updat
                 count,
                 tag_name,
                 ignore_tag,
+                use_tag,
                 unattended,
             };
             if (isSonarr) entry.season_monitored_threshold = season_threshold;
@@ -609,6 +619,9 @@ export function upgradinatorrModal(editIdx, upgradinatorrData, rootConfig, updat
         : '';
     modal.querySelector('#upgradinatorr-ignore-tag').value = isEdit
         ? upgradinatorrData[editIdx].ignore_tag
+        : '';
+    modal.querySelector('#upgradinatorr-use-tag').value = isEdit
+        ? upgradinatorrData[editIdx].use_tag ?? ''
         : '';
     modal.querySelector('#upgradinatorr-unattended').value = isEdit
         ? String(upgradinatorrData[editIdx].unattended)
